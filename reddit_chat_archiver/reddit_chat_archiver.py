@@ -3,6 +3,7 @@ import requests
 import logging
 import json
 import os
+from ._version import get_versions
 try:
     from colorama import init, Fore, Style
 except ImportError:
@@ -92,6 +93,7 @@ def main():
 
     parser = argparse.ArgumentParser()
 
+    parser.add_argument('-V', '--version', action='version', version='%(prog)s {version}'.format(version=get_versions()["version"]))
     parser.add_argument('-v', '--verbose', action='count', default=0, help="Print extra traces (INFO level). Use twice to print DEBUG prints")
 
     subparsers = parser.add_subparsers(title="Operation", help='Command to run', dest='action')

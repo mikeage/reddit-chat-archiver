@@ -1,0 +1,2 @@
+include versioneer.py
+include reddit_chat_archiver/_version.py

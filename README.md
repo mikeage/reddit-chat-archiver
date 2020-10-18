@@ -2,7 +2,7 @@
 
 # Usage
 
-Open reddit chat in a browser, authenticate, etc. Look in Web Developer / Inspect Element / Whatever for a request containing a Session-Key header. Copy that key (it's good for ~1 week, I'm told). Pass it with -k KEY whenever you call this script
+Open reddit chat in a browser, authenticate, etc. Look in Web Developer / Inspect Element / Whatever for a request containing a Session-Key header. Copy that key (it's good for ~1 week, I'm told). Pass it with -k KEY whenever you call this script, or set it globally using `export REDDIT_SESSION_KEY=xxx`.
 
 # Installation
 ```bash

@@ -2,6 +2,7 @@ import argparse
 import requests
 import logging
 import json
+import os
 try:
     from colorama import init, Fore, Style
 except ImportError:
@@ -97,7 +98,7 @@ def main():
     subparsers.required = True
 
     parser_list_group_channels = subparsers.add_parser('list-group-channels', help='List all group channels and URLs')  # , parents=[common_parser])
-    parser_list_group_channels.add_argument('-k', '--key', help="Session-Key (get using Web Inspector from a browser)", required=True)
+    parser_list_group_channels.add_argument('-k', '--key', help="Session-Key (get using Web Inspector from a browser)", default=os.getenv("REDDIT_SESSION_KEY", None))
     parser_get_group_channel = subparsers.add_parser('get-group-channel', help='Get all messages from the specified chat')  # , parents=[common_parser])
     parser_get_group_channel.add_argument("channel_url", help="Channel URL")
     parser_get_group_channel.add_argument('-k', '--key', help="Session-Key (get using Web Inspector from a browser)", required=True)
@@ -108,6 +109,8 @@ def main():
     level = levels[min(len(levels) - 1, args.verbose)]
     logging.basicConfig(level=level)
     logging.getLogger('prawcore').setLevel(logging.ERROR)
+
+    assert args.key
 
     if args.action == "list-group-channels":
         get_all_channels(args.key)

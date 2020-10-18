@@ -1,0 +1,27 @@
+---
+repos:
+- repo: https://github.com/pre-commit/pre-commit-hooks
+  rev: v2.0.0
+  hooks:
+  - id: trailing-whitespace
+  - id: check-json
+  - id: check-yaml
+  - id: debug-statements
+  - id: end-of-file-fixer
+  - id: flake8
+    args:
+    - --ignore=E501
+- repo: https://github.com/pre-commit/mirrors-pylint.git
+  rev: v2.3.0
+  hooks:
+  - id: pylint
+    name: pylint (python 3)
+    args:
+    -  --load-plugins=pylint.extensions.redefined_variable_type,pylint.extensions.bad_builtin
+- repo: https://github.com/pre-commit/mirrors-autopep8
+  rev: v1.4
+  hooks:
+  - id: autopep8
+    args:
+    - -i
+    - --max-line-length=999

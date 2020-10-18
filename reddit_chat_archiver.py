@@ -2,6 +2,20 @@ import argparse
 import requests
 import logging
 import json
+try:
+    from colorama import init, Fore, Style
+except ImportError:
+    def init():
+        pass
+
+    class Style(object):
+        pass
+    Style.RESET_ALL = ""
+
+    class Fore(object):
+        pass
+    Fore.RESET = Fore.RED = ""
+
 
 HOST = "sendbirdproxy.chat.redditmedia.com"
 
@@ -66,13 +80,15 @@ def get_all_messages(key, channel_url, starting_timestamp=0):
             if message["type"] == "ADMM":
                 print("%s" % message["message"])
             elif message["type"] == "MESG":
-                print("%s: %s" % (message["user"]["nickname"], message["message"]))
+                print(Style.RESET_ALL + Fore.RED + message["user"]["nickname"] + Fore.RESET + ": " + message["message"])
             else:
                 print("UKNOWN MESSAGE: %s" % message)
         starting_timestamp = messages[-1]["created_at"]
 
 
 def main():
+    init()
+
     parser = argparse.ArgumentParser()
 
     parser.add_argument('-v', '--verbose', action='count', default=0, help="Print extra traces (INFO level). Use twice to print DEBUG prints")

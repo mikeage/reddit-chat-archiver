@@ -1,8 +1,10 @@
 import argparse
-import requests
-import logging
 import json
+import logging
 import os
+import re
+import requests
+import websocket
 from ._version import get_versions
 try:
     from colorama import init, Fore, Style
@@ -21,6 +23,33 @@ except ImportError:
 
 HOST = "sendbirdproxy.chat.redditmedia.com"
 LOGGER = logging.getLogger(__name__)
+
+
+def dump_session_key(username, password, twofa):
+    headers = {'User-Agent': 'Firefox'}  # It seems to fail with no User-Agent.
+    data = {
+        'op': 'login',
+        'user': username,
+        'passwd': "%s%s" % (password, ":%s" % twofa if twofa else "")
+    }
+    response = requests.post('https://www.reddit.com/post/login', headers=headers, data=data, allow_redirects=False)
+    reddit_session = response.cookies.get("reddit_session")
+    chat_r = requests.get("https://www.reddit.com/chat/", headers=headers, cookies={"reddit_session": reddit_session})
+    # This is ugly, but I don't feel like loading it into an XML parser just to find JS to find JSON
+    sendbird_scoped_token = re.search(b'"accessToken":"(.*?)"', chat_r.content).group(1).decode()
+    user_id = re.search(b'"user":{"account":{"id":"(.*?)"', chat_r.content).group(1).decode()
+    LOGGER.info("sendbird scoped token -> %s", sendbird_scoped_token)
+    LOGGER.info("user id -> %s", user_id)
+    headers = {'authorization': f'Bearer {sendbird_scoped_token}'}
+    response = requests.get('https://s.reddit.com/api/v1/sendbird/me', headers=headers)
+    sb_access_token = response.json()['sb_access_token']
+    LOGGER.info("sb_access_token -> %s", sb_access_token)
+    ai = '2515BDA8-9D3A-47CF-9325-330BC37ADA13'  # This is reddit's chat AI.
+    ws = websocket.create_connection(f"wss://sendbirdproxy.chat.redditmedia.com/?p=_&pv=29&sv=3.0.82&ai={ai}&user_id={user_id}&access_token={sb_access_token}")
+    result = ws.recv()
+    ws.close()
+    key = json.loads(result[result.find('{'):])['key']
+    print(f"export REDDIT_SESSION_KEY={key}")
 
 
 def get_all_channels(key):
@@ -100,6 +129,10 @@ def main():
     subparsers = parser.add_subparsers(title="Operation", help='Command to run', dest='action')
     subparsers.required = True
 
+    parser_dump_session_key = subparsers.add_parser('dump-session-key', help='List all group channels and URLs')  # , parents=[common_parser])
+    parser_dump_session_key.add_argument('-u', '--username', help="Reddit Username", default=os.getenv("REDDIT_USERNAME", None))
+    parser_dump_session_key.add_argument('-p', '--password', help="Reddit Password", default=os.getenv("REDDIT_PASSWORD", None))
+    parser_dump_session_key.add_argument('-2', '--2fa', dest="twofa", help="Reddit 2FA code", default=os.getenv("REDDIT_2FA", None))
     parser_list_group_channels = subparsers.add_parser('list-group-channels', help='List all group channels and URLs')  # , parents=[common_parser])
     parser_list_group_channels.add_argument('-k', '--key', help="Session-Key (get using Web Inspector from a browser)", default=os.getenv("REDDIT_SESSION_KEY", None))
     parser_get_group_channel = subparsers.add_parser('get-group-channel', help='Get all messages from the specified chat')  # , parents=[common_parser])
@@ -113,12 +146,15 @@ def main():
     logging.basicConfig(level=level)
     logging.getLogger('prawcore').setLevel(logging.ERROR)
 
-    assert args.key
-
     if args.action == "list-group-channels":
+        assert args.key
         get_all_channels(args.key)
     elif args.action == "get-group-channel":
+        assert args.key
         get_all_messages(args.key, args.channel_url, 0)
+    elif args.action == "dump-session-key":
+        assert args.username and args.password
+        dump_session_key(args.username, args.password, args.twofa)
     LOGGER.info("Done")
 
 

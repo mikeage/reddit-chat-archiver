@@ -20,6 +20,7 @@ except ImportError:
 
 
 HOST = "sendbirdproxy.chat.redditmedia.com"
+LOGGER = logging.getLogger(__name__)
 
 
 def get_all_channels(key):
@@ -118,6 +119,7 @@ def main():
         get_all_channels(args.key)
     elif args.action == "get-group-channel":
         get_all_messages(args.key, args.channel_url, 0)
+    LOGGER.info("Done")
 
 
 if __name__ == '__main__':

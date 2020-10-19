@@ -49,18 +49,18 @@ def do_songbird_login(username, password, twofa):
 
 
 class Chat(object):
-    def __init__(self, url):
+    def __init__(self, url, all_channels):
         self.ws = websocket.WebSocketApp(url, on_message=lambda ws, msg: self.on_message(msg), on_error=lambda ws, error: self.on_error(error), on_close=lambda ws: self.on_close())
+        self._all_channels = all_channels
         self._last_error = None
 
-    @staticmethod
-    def on_message(msg):
+    def on_message(self, msg):
         msg_type = msg[0:4]
         if msg_type == "LOGI":
             print(Style.RESET_ALL + Fore.GREEN + "Logged in!" + Style.RESET_ALL)
         if msg_type == "MESG":
-            print(msg)
-            print(Style.RESET_ALL + Fore.RED + msg["user"]["name"] + Fore.RESET + ": " + msg["message"])
+            j = json.loads(msg[4:])
+            print(Style.RESET_ALL + Fore.BLUE + self._all_channels[j["channel_url"]]["name"] + " " + Fore.RED + j["user"]["name"] + Fore.RESET + ": " + j["message"])
 
     @staticmethod
     def on_close():
@@ -81,17 +81,23 @@ class Chat(object):
 
 def stream(username, password, twofa):
     _, _, user_id, sb_access_token = do_songbird_login(username, password, twofa)
-    ws = Chat(f"wss://sendbirdproxy.chat.redditmedia.com/?p=_&pv=29&sv=3.0.82&ai={AI}&user_id={user_id}&access_token={sb_access_token}")
+    key = get_session_key(user_id, sb_access_token)
+    all_channels = get_all_channels(key)
+    ws = Chat(f"wss://sendbirdproxy.chat.redditmedia.com/?p=_&pv=29&sv=3.0.82&ai={AI}&user_id={user_id}&access_token={sb_access_token}", all_channels)
     ws.start()
 
 
 def dump_session_key(username, password, twofa):
     _, _, user_id, sb_access_token = do_songbird_login(username, password, twofa)
+    return get_session_key(user_id, sb_access_token)
+
+
+def get_session_key(user_id, sb_access_token):
     ws = websocket.create_connection(f"wss://sendbirdproxy.chat.redditmedia.com/?p=_&pv=29&sv=3.0.82&ai={AI}&user_id={user_id}&access_token={sb_access_token}")
     result = ws.recv()
     ws.close()
     key = json.loads(result[result.find('{'):])['key']
-    print(f"export REDDIT_SESSION_KEY={key}")
+    return key
 
 
 def get_all_channels(key):
@@ -101,6 +107,7 @@ def get_all_channels(key):
     response = requests.get(uri, headers=headers, params=params)
     assert response.ok
     group_channels = response.json()["channels"]
+    all_channels = {}
     for group_channel in group_channels:
         name = None
         if not name:
@@ -122,7 +129,9 @@ def get_all_channels(key):
             custom_type = "r/%s" % json.loads(group_channel["data"])["subreddit"]["name"]
         except (json.decoder.JSONDecodeError, KeyError):
             custom_type = group_channel["custom_type"]
-        print("%s\t%s\t%s" % (custom_type, name, group_channel["channel_url"]))
+
+        all_channels[group_channel["channel_url"]] = {"type": custom_type, "name": name}
+    return all_channels
 
 
 def get_all_messages(key, channel_url, starting_timestamp=0):
@@ -198,13 +207,17 @@ def main():
 
     if args.action == "list-group-channels":
         assert args.key
-        get_all_channels(args.key)
+        all_channels = get_all_channels(args.key)
+        for url, details in all_channels.items():
+            print("%s\t%s\t%s" % (details["type"], details["name"], url))
+
     elif args.action == "get-group-channel":
         assert args.key
         get_all_messages(args.key, args.channel_url, 0)
     elif args.action == "dump-session-key":
         assert args.username and args.password
-        dump_session_key(args.username, args.password, args.twofa)
+        key = dump_session_key(args.username, args.password, args.twofa)
+        print(f"export REDDIT_SESSION_KEY={key}")
     elif args.action == "stream":
         stream(args.username, args.password, args.twofa)
     LOGGER.info("Done")

@@ -5,6 +5,7 @@ import os
 import re
 import requests
 import websocket
+import socket
 from ._version import get_versions
 try:
     from colorama import init, Fore, Style
@@ -73,7 +74,7 @@ class Chat(object):
     def start(self):
         while True:
             self.ws.run_forever(ping_interval=15, ping_timeout=5)
-            if self._last_error == websocket.WebSocketConnectionClosedException:
+            if isinstance(self._last_error, (websocket.WebSocketTimeoutException, websocket.WebSocketConnectionClosedException, ConnectionError, socket.gaierror)):
                 LOGGER.warning("Reconnecting...")
                 continue
             return

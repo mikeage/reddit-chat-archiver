@@ -15,7 +15,7 @@ setup(name='reddit-chat-archiver',
       },
       install_requires=[
           'colorama',
-          'websocket-client',
+          'websocket-client @ git+ssh://git@github.com/mikeage/websocket-client@python39#egg=websocket-client',
           'requests'
       ],
       zip_safe=False)

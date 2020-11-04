@@ -4,6 +4,7 @@ import logging
 import os
 import re
 import requests
+import time
 import websocket
 from ._version import get_versions
 try:
@@ -50,9 +51,14 @@ def do_songbird_login(username, password, twofa):
 
 class Chat(object):
     def __init__(self, url, all_channels):
-        self.ws = websocket.WebSocketApp(url, on_message=lambda ws, msg: self.on_message(msg), on_error=lambda ws, error: self.on_error(error), on_close=lambda ws: self.on_close())
+        self.ws = websocket.WebSocketApp(url, on_open=lambda ws: self.on_open(), on_message=lambda ws, msg: self.on_message(msg), on_error=lambda ws, error: self.on_error(error), on_close=lambda ws: self.on_close())
         self._all_channels = all_channels
         self._last_error = None
+        self._retry = 0
+
+    def on_open(self):
+        self._retry = 0
+        LOGGER.info("Connected!")
 
     def on_message(self, msg):
         msg_type = msg[0:4]
@@ -74,6 +80,9 @@ class Chat(object):
         while True:
             self.ws.run_forever(ping_interval=15, ping_timeout=5)
             if isinstance(self._last_error, (websocket.WebSocketTimeoutException, websocket.WebSocketConnectionClosedException, websocket.WebSocketAddressException, ConnectionError)):
+                self._retry = self._retry + 1
+                LOGGER.warning("Sleeping (try %s)", self._retry)
+                time.sleep(min(15, 2 ** (self._retry - 1)))
                 LOGGER.warning("Reconnecting...")
                 continue
             return

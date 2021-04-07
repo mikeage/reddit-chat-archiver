@@ -201,8 +201,7 @@ def get_all_messages(key, channel_url, starting_timestamp=0):
             if message["type"] == "ADMM":
                 print("%s" % message["message"])
             elif message["type"] == "MESG":
-                j = json.loads(message[4:])
-                print(Style.RESET_ALL + Fore.RED + j["user"]["nickname"] + Fore.RESET + ": " + j["message"])
+                print(Style.RESET_ALL + Fore.RED + message["user"]["nickname"] + Fore.RESET + ": " + message["message"])
             else:
                 print("UKNOWN MESSAGE: %s" % message)
         starting_timestamp = messages[-1]["created_at"]

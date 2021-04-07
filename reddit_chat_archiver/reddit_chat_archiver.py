@@ -262,7 +262,7 @@ def main():
         assert args.key
         all_channels = get_all_channels(args.key)
         for url, details in all_channels.items():
-            print("%s\t%s\t%s" % (details["type"], details["name"], url))
+            print("%-12s %-32s %s" % (details["type"], details["name"], url))
 
     elif args.action == "get-group-channel":
         assert args.key

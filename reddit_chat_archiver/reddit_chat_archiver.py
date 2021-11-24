@@ -159,15 +159,20 @@ def get_all_channels(key):
         if not name:
             name = group_channel["name"]
         if not name:
+            participants = set()
             try:
-                name = "C: %s" % group_channel["created_by"]["nickname"]
-            except (KeyError, TypeError):
+                participants.add(group_channel.get("last_message", {}).get("user", {}).get("nickname", None))
+            except AttributeError:
                 pass
-        if not name:
             try:
-                name = "I: %s" % group_channel["inviter"]["nickname"]
-            except (KeyError, TypeError):
+                participants.add(group_channel.get("created_by", {}).get("nickname", None))
+            except AttributeError:
                 pass
+            try:
+                participants.add(group_channel.get("inviter", {}).get("nickname", None))
+            except AttributeError:
+                pass
+            name = ", ".join(participants)
         if not name:
             name = "<unknown>"
 

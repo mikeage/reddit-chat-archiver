@@ -26,14 +26,22 @@ except ImportError:
     Fore.RESET = Fore.RED = Fore.BLUE = Fore.GREEN = ""
 
 
-HOST = "sendbirdproxy.chat.redditmedia.com"
+HOST = "sendbirdproxyk8s.chat.redditmedia.com"
 AI = "2515BDA8-9D3A-47CF-9325-330BC37ADA13"  # This is reddit's chat AI.
 LOGGER = logging.getLogger(__name__)
 
 
 def do_songbird_login(username, password, twofa):
-    headers = {"User-Agent": "Firefox"}  # It seems to fail with no User-Agent.
-    data = {"op": "login", "user": username, "passwd": "%s%s" % (password, ":%s" % twofa if twofa else "")}
+    headers = {
+        "User-Agent": "Firefox",
+        "Accept": "application/json, text/javascript, */*",
+        "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
+        "X-Requested-With": "XMLHttpRequest",
+        "Sec-Fetch-Dest": "empty",
+        "Sec-Fetch-Mode": "cors",
+        "Sec-Fetch-Site": "same-origin",
+    }
+    data = {"op": "login", "user": username, "passwd": "%s%s" % (password, ":%s" % twofa if twofa else ""), "api_type": "json"}
     response = requests.post("https://www.reddit.com/post/login", headers=headers, data=data, allow_redirects=False)
     reddit_session = response.cookies.get("reddit_session")
     chat_r = requests.get("https://www.reddit.com/chat/", headers=headers, cookies={"reddit_session": reddit_session})
@@ -117,7 +125,7 @@ def stream(username, password, twofa):
     key = get_session_key(user_id, sb_access_token)
     all_channels = get_all_channels(key)
     ws = Chat(
-        f"wss://sendbirdproxy.chat.redditmedia.com/?p=_&pv=29&sv=3.0.82&ai={AI}&user_id={user_id}&access_token={sb_access_token}",
+        f"wss://sendbirdproxyk8s.chat.redditmedia.com/?p=_&pv=29&sv=3.0.82&ai={AI}&user_id={user_id}&access_token={sb_access_token}",
         all_channels,
     )
     ws.start()
@@ -130,7 +138,7 @@ def dump_session_key(username, password, twofa):
 
 def get_session_key(user_id, sb_access_token):
     ws = websocket.create_connection(
-        f"wss://sendbirdproxy.chat.redditmedia.com/?p=_&pv=29&sv=3.0.82&ai={AI}&user_id={user_id}&access_token={sb_access_token}"
+        f"wss://sendbirdproxyk8s.chat.redditmedia.com/?p=_&pv=29&sv=3.0.82&ai={AI}&user_id={user_id}&access_token={sb_access_token}"
     )
     result = ws.recv()
     ws.close()

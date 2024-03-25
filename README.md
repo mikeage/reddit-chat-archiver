@@ -1,3 +1,5 @@
+This only works on the old reddit chat (the one based on Sendbird), which reddit has completely retired, including deleting old chats. Unfortunately, that means that this repo is now useless. 
+
 # Archive your reddit chats
 
 # Usage
